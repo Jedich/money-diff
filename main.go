@@ -2,19 +2,19 @@ package main
 
 import (
 	"log"
-
-	bot "money-diff/bot"
-	helper "money-diff/bot/helpers"
+	"money-diff/bot"
+	"money-diff/bot/helpers"
+	"money-diff/db"
 )
 
 // main function start the application.
 func main() {
-
-	if err := helper.LoadEnv(); err != nil {
+	if err := helpers.LoadEnv(); err != nil {
 		log.Fatal(err)
 	}
 
-	token := helper.GetBotToken()
+	token := helpers.GetBotToken()
+	conn := db.OpenConnection()
 
-	log.Fatal(bot.StartBot(token))
+	log.Fatal(bot.StartBot(token, conn))
 }

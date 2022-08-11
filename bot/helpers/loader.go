@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"log"
 	"os"
 	"runtime"
 	"strings"
@@ -23,6 +24,9 @@ func LoadEnv(path ...string) error {
 // Getenv return a string with the value
 // of the given environment key
 func Getenv(key string) string {
+	if _, ok := os.LookupEnv(key); !ok {
+		log.Fatalf("%s not set.", key)
+	}
 	return os.Getenv(key)
 }
 

@@ -1,13 +1,14 @@
 package bot
 
 import (
+	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 // StartBot this function to start the bot
-func StartBot(token string) error {
+func StartBot(token string, conn *mongo.Client) error {
 
 	bot, err := tgbotapi.NewBotAPI(token)
 

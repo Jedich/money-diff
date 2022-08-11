@@ -37,4 +37,4 @@ output/*
 .idea/**/uiDesigner.xml
 .idea/**/dbnavigator.xml
 
-.env
+*.env
