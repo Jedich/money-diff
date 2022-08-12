@@ -1,0 +1,58 @@
+package impl
+
+import (
+	"context"
+	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"money-diff/dao/db"
+	"money-diff/dao/models"
+	"time"
+)
+
+type PaymentDaoImpl struct {
+	connection *db.Connection
+}
+
+func NewPaymentDao(connection *db.Connection) *PaymentDaoImpl {
+	return &PaymentDaoImpl{connection: connection}
+}
+
+func (dao PaymentDaoImpl) Create(p *models.Payment) error {
+	collection := dao.connection.Client.Database("money").Collection("payments")
+
+	ctx, cancel := context.WithTimeout(dao.connection.Ctx, 2*time.Second)
+	defer cancel()
+
+	req, err := collection.InsertOne(ctx, p)
+	fmt.Println(req.InsertedID)
+	if err != nil {
+		return fmt.Errorf("error inserting: %s", err)
+	}
+
+	return nil
+}
+
+func (dao PaymentDaoImpl) GetByChatID(chatID int64) ([]bson.M, error) {
+	collection := dao.connection.Client.Database("money").Collection("payments")
+	filter := bson.D{
+		{"$match", bson.D{{"chat_id", chatID}}}}
+	groupStage := bson.D{
+		{"$group", bson.D{
+			{"_id", "$username"},
+			{"value", bson.D{{"$sum", "$value"}}},
+		}}}
+	cur, err := collection.Aggregate(dao.connection.Ctx, mongo.Pipeline{filter, groupStage})
+	if err != nil {
+		return nil, fmt.Errorf("error querying: %s", err)
+	}
+	var results []bson.M
+	if err = cur.All(context.TODO(), &results); err != nil {
+		return nil, fmt.Errorf("error querying: %s", err)
+	}
+
+	for _, result := range results {
+		fmt.Println(result)
+	}
+	return results, nil
+}

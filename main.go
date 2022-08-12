@@ -6,7 +6,7 @@ import (
 	"log"
 	"money-diff/bot"
 	"money-diff/bot/helpers"
-	"money-diff/db"
+	"money-diff/dao/db"
 )
 
 // main function start the application.
@@ -24,7 +24,7 @@ func main() {
 		if err := client.Disconnect(ctx); err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println("disconnected from db")
+		fmt.Println("disconnected from dao")
 	}()
 
 	log.Fatal(bot.StartBot(token, &db.Connection{

@@ -15,22 +15,8 @@ type Connection struct {
 	Ctx    context.Context
 }
 
-//OpenConnection return a connection of a desired db driver
+//OpenConnection return a connection of a mongodb driver
 func OpenConnection(ctx context.Context) *mongo.Client {
-	//var dsn string
-	//switch helpers.Getenv("DB_DRIVER") {
-	//case "postgres":
-	//	dsn = fmt.Sprintf("host=%s user=%s password=%s dbname=money port=%s sslmode=disable",
-	//		helpers.Getenv("DB_HOST"), helpers.Getenv("DB_USER"), helpers.Getenv("DB_PASS"),
-	//		helpers.Getenv("DB_PORT"))
-	//default:
-	//	log.Fatal("no driver configuration found")
-	//}
-	//
-	//db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	//if err != nil {
-	//	log.Fatal("failed to connect to database")
-	//}
 	uri := helpers.Getenv("MONGODB_URI")
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))

@@ -1,16 +1,15 @@
 package commands
 
 import (
-	"context"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"money-diff/bot/helpers"
-	"money-diff/db"
-	"money-diff/db/models"
+	"money-diff/dao/db"
+	"money-diff/dao/impl"
+	"money-diff/dao/models"
 	"strconv"
 	"strings"
-	"time"
 )
 
 func AddPayment(conn *db.Connection, user *helpers.User, bot *tgbotapi.BotAPI, arguments string) error {
@@ -19,25 +18,21 @@ func AddPayment(conn *db.Connection, user *helpers.User, bot *tgbotapi.BotAPI, a
 	if err != nil {
 		return err
 	}
+	payment := &models.Payment{
+		ID:       primitive.NewObjectID(),
+		ChatID:   user.ChatID,
+		Username: user.Username,
+		Value:    float32(value),
+	}
 
-	collection := conn.Client.Database("money").Collection("payments")
-	ctx, cancel := context.WithTimeout(conn.Ctx, 2*time.Second)
-	defer cancel()
-
-	req, err := collection.InsertOne(ctx, &models.Payment{
-		ID:     primitive.NewObjectID(),
-		ChatID: user.ChatID,
-		UserID: user.UserID,
-		Value:  float32(value),
-	})
-	fmt.Println(req.InsertedID)
+	paymentDao := impl.NewPaymentDao(conn)
+	err = paymentDao.Create(payment)
 	if err != nil {
-		return fmt.Errorf("error inserting: %s", err)
+		return err
 	}
 
 	msg := tgbotapi.NewMessage(user.ChatID, "")
 	msg.Text = "Payment added to the vault!"
-
 	_, err = bot.Send(msg)
 
 	return fmt.Errorf("error sending: %s", err)

@@ -3,7 +3,7 @@ package bot
 import (
 	"fmt"
 	"money-diff/bot/helpers"
-	"money-diff/db"
+	"money-diff/dao/db"
 
 	command "money-diff/bot/commands"
 
@@ -11,8 +11,9 @@ import (
 )
 
 var commandList = map[string]interface{}{
-	"help": command.Help,
-	"ap":   command.AddPayment,
+	"help":  command.Help,
+	"ap":    command.AddPayment,
+	"total": command.GetTotal,
 }
 
 func cmdHandler(conn *db.Connection, update tgbotapi.Update, bot *tgbotapi.BotAPI) error {
@@ -21,14 +22,13 @@ func cmdHandler(conn *db.Connection, update tgbotapi.Update, bot *tgbotapi.BotAP
 		commandReq := update.Message.Command()
 		commandArgs := update.Message.CommandArguments()
 		user := &helpers.User{
-			UserID: update.Message.From.ID,
-			ChatID: update.Message.Chat.ID,
+			Username: update.Message.From.UserName,
+			ChatID:   update.Message.Chat.ID,
 		}
 		if _, ok := commandList[commandReq]; !ok {
 			// Make a default action ?
 			return nil
 		}
-
 		err := commandList[commandReq].(func(*db.Connection, *helpers.User, *tgbotapi.BotAPI, string) error)(conn, user, bot, commandArgs)
 
 		if err != nil {

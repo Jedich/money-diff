@@ -2,7 +2,7 @@ package bot
 
 import (
 	"log"
-	"money-diff/db"
+	"money-diff/dao/db"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
