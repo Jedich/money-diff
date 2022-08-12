@@ -1,7 +1,9 @@
 package bot
 
 import (
-	"log"
+	"fmt"
+	"money-diff/bot/helpers"
+	"money-diff/db"
 
 	command "money-diff/bot/commands"
 
@@ -9,30 +11,34 @@ import (
 )
 
 var commandList = map[string]interface{}{
-	"help": command.Help}
+	"help": command.Help,
+	"ap":   command.AddPayment,
+}
 
-func cmdHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI) error {
+func cmdHandler(conn *db.Connection, update tgbotapi.Update, bot *tgbotapi.BotAPI) error {
 
 	if update.Message.IsCommand() {
-
 		commandReq := update.Message.Command()
 		commandArgs := update.Message.CommandArguments()
-
+		user := &helpers.User{
+			UserID: update.Message.From.ID,
+			ChatID: update.Message.Chat.ID,
+		}
 		if _, ok := commandList[commandReq]; !ok {
 			// Make a default action ?
 			return nil
 		}
 
-		err := commandList[commandReq].(func(int64, *tgbotapi.BotAPI, string) error)(update.Message.Chat.ID, bot, commandArgs)
+		err := commandList[commandReq].(func(*db.Connection, *helpers.User, *tgbotapi.BotAPI, string) error)(conn, user, bot, commandArgs)
 
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
 		}
 
 	}
 	return nil
 }
 
-func commandHandler(update tgbotapi.Update, bot *tgbotapi.BotAPI) error {
-	return cmdHandler(update, bot)
+func commandHandler(conn *db.Connection, update tgbotapi.Update, bot *tgbotapi.BotAPI) error {
+	return cmdHandler(conn, update, bot)
 }

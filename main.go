@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"money-diff/bot"
 	"money-diff/bot/helpers"
@@ -13,8 +15,21 @@ func main() {
 		log.Fatal(err)
 	}
 
-	token := helpers.GetBotToken()
-	conn := db.OpenConnection()
+	ctx := context.TODO()
 
-	log.Fatal(bot.StartBot(token, conn))
+	token := helpers.GetBotToken()
+	client := db.OpenConnection(ctx)
+
+	defer func() {
+		if err := client.Disconnect(ctx); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("disconnected from db")
+	}()
+
+	log.Fatal(bot.StartBot(token, &db.Connection{
+		Client: client,
+		Ctx:    ctx,
+	}))
+
 }
