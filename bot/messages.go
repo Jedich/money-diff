@@ -3,8 +3,10 @@ package bot
 import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
+	command "money-diff/bot/commands"
 	"money-diff/bot/helpers"
 	"regexp"
+	"strings"
 
 	msg "money-diff/bot/messages"
 
@@ -12,12 +14,12 @@ import (
 )
 
 var regularMsgs = map[string]interface{}{
-	"hi":   msg.Greet,
-	"ALLO": msg.Greet,
+	"hi":        msg.Greet,
+	"бот додай": command.AddPayment,
+	"bot add":   command.AddPayment,
 }
 
 func messageHandler(client *mongo.Client, update tgbotapi.Update, bot *tgbotapi.BotAPI) error {
-
 	if update.Message.IsCommand() {
 		log.Println("no")
 	}
@@ -33,15 +35,16 @@ func messageHandler(client *mongo.Client, update tgbotapi.Update, bot *tgbotapi.
 
 	// Store all the possible response that can be performed based in the regex
 	for keyRegex, valueRegex := range regularMsgs {
-		if ok, _ := regexp.MatchString(keyRegex, message); ok {
+		if ok, _ := regexp.MatchString(keyRegex, strings.ToLower(message)); ok {
 			responseQ = append(responseQ, valueRegex)
 		}
 	}
+	args := strings.Split(message, " ")
 
-	// Take a decision about which actions will be performed.
-	// For this example I will only executed the last action found.
+	// last action found will be performed.
 	if resQLen := len(responseQ); resQLen > 0 {
-		err := responseQ[resQLen-1].(func(*mongo.Client, *helpers.BotUpdateData, string) error)(client, botData, message)
+		// Set last word as argument
+		err := responseQ[resQLen-1].(func(*mongo.Client, *helpers.BotUpdateData, string) error)(client, botData, args[len(args)-1])
 
 		if err != nil {
 			log.Fatal(err)

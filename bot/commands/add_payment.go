@@ -16,7 +16,12 @@ func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 	fmt.Println("args:" + arguments)
 	value, err := strconv.ParseFloat(strings.Split(arguments, " ")[0], 32)
 	if err != nil {
-		return err
+		msg := tgbotapi.NewMessage(bot.Update.Message.Chat.ID, "Please input a correct float value.")
+		_, err = bot.Instance.Send(msg)
+		if err != nil {
+			return fmt.Errorf("error sending: %s", err)
+		}
+		return nil
 	}
 	payment := &models.Payment{
 		ID:       primitive.NewObjectID(),
@@ -31,8 +36,7 @@ func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 		return err
 	}
 
-	msg := tgbotapi.NewMessage(bot.Update.Message.Chat.ID, "")
-	msg.Text = "Payment added to the vault!"
+	msg := tgbotapi.NewMessage(bot.ChatID, "Payment added to the vault!")
 	_, err = bot.Instance.Send(msg)
 	if err != nil {
 		return fmt.Errorf("error sending: %s", err)

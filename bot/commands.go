@@ -17,26 +17,23 @@ var commandList = map[string]interface{}{
 }
 
 func cmdHandler(client *mongo.Client, update tgbotapi.Update, bot *tgbotapi.BotAPI) error {
+	commandReq := update.Message.Command()
+	commandArgs := update.Message.CommandArguments()
+	botData := &helpers.BotUpdateData{
+		Instance: bot,
+		Update:   update,
+		ChatID:   update.Message.Chat.ID,
+		Username: update.Message.From.UserName,
+	}
 
-	if update.Message.IsCommand() {
-		commandReq := update.Message.Command()
-		commandArgs := update.Message.CommandArguments()
-		botData := &helpers.BotUpdateData{
-			Instance: bot,
-			Update:   update,
-			ChatID:   update.Message.Chat.ID,
-			Username: update.Message.From.UserName,
-		}
-		if _, ok := commandList[commandReq]; !ok {
-			// Make a default action ?
-			return nil
-		}
-		err := commandList[commandReq].(func(*mongo.Client, *helpers.BotUpdateData, string) error)(client, botData, commandArgs)
+	if _, ok := commandList[commandReq]; !ok {
+		// Make a default action ?
+		return nil
+	}
+	err := commandList[commandReq].(func(*mongo.Client, *helpers.BotUpdateData, string) error)(client, botData, commandArgs)
 
-		if err != nil {
-			fmt.Println(err)
-		}
-
+	if err != nil {
+		fmt.Println(err)
 	}
 	return nil
 }
