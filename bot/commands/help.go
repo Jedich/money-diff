@@ -2,15 +2,17 @@ package commands
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"go.mongodb.org/mongo-driver/mongo"
+	"money-diff/bot/helpers"
 )
 
 // Help display the help for the bot
-func Help(chatID int64, bot *tgbotapi.BotAPI, arguments string) error {
+func Help(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) error {
 
-	msg := tgbotapi.NewMessage(chatID, "")
+	msg := tgbotapi.NewMessage(bot.ChatID, "")
 	msg.Text = "this is the help"
 
-	_, err := bot.Send(msg)
+	_, err := bot.Instance.Send(msg)
 
 	return err
 }

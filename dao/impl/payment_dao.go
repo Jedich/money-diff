@@ -5,23 +5,22 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"money-diff/dao/db"
 	"money-diff/dao/models"
 	"time"
 )
 
 type PaymentDaoImpl struct {
-	connection *db.Connection
+	client *mongo.Client
 }
 
-func NewPaymentDao(connection *db.Connection) *PaymentDaoImpl {
-	return &PaymentDaoImpl{connection: connection}
+func NewPaymentDao(client *mongo.Client) *PaymentDaoImpl {
+	return &PaymentDaoImpl{client: client}
 }
 
 func (dao PaymentDaoImpl) Create(p *models.Payment) error {
-	collection := dao.connection.Client.Database("money").Collection("payments")
+	collection := dao.client.Database("money").Collection("payments")
 
-	ctx, cancel := context.WithTimeout(dao.connection.Ctx, 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	req, err := collection.InsertOne(ctx, p)
@@ -34,7 +33,7 @@ func (dao PaymentDaoImpl) Create(p *models.Payment) error {
 }
 
 func (dao PaymentDaoImpl) GetByChatID(chatID int64) ([]bson.M, error) {
-	collection := dao.connection.Client.Database("money").Collection("payments")
+	collection := dao.client.Database("money").Collection("payments")
 	filter := bson.D{
 		{"$match", bson.D{{"chat_id", chatID}}}}
 	groupStage := bson.D{
@@ -42,7 +41,10 @@ func (dao PaymentDaoImpl) GetByChatID(chatID int64) ([]bson.M, error) {
 			{"_id", "$username"},
 			{"value", bson.D{{"$sum", "$value"}}},
 		}}}
-	cur, err := collection.Aggregate(dao.connection.Ctx, mongo.Pipeline{filter, groupStage})
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	cur, err := collection.Aggregate(ctx, mongo.Pipeline{filter, groupStage})
 	if err != nil {
 		return nil, fmt.Errorf("error querying: %s", err)
 	}

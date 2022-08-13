@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"log"
 	"money-diff/bot"
 	"money-diff/bot/helpers"
@@ -15,21 +13,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ctx := context.TODO()
-
 	token := helpers.GetBotToken()
-	client := db.OpenConnection(ctx)
+	client := db.OpenConnection()
+	defer db.CloseConnection(client)
 
-	defer func() {
-		if err := client.Disconnect(ctx); err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println("disconnected from dao")
-	}()
-
-	log.Fatal(bot.StartBot(token, &db.Connection{
-		Client: client,
-		Ctx:    ctx,
-	}))
+	log.Fatal(bot.StartBot(token, client))
 
 }

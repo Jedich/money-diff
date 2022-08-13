@@ -1,14 +1,14 @@
 package bot
 
 import (
+	"go.mongodb.org/mongo-driver/mongo"
 	"log"
-	"money-diff/dao/db"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 // StartBot this function to start the bot
-func StartBot(token string, conn *db.Connection) error {
+func StartBot(token string, client *mongo.Client) error {
 
 	bot, err := tgbotapi.NewBotAPI(token)
 
@@ -37,14 +37,14 @@ func StartBot(token string, conn *db.Connection) error {
 		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
 		if update.Message.IsCommand() {
-			if err = commandHandler(conn, update, bot); err != nil { // Handle the command message
+			if err = commandHandler(client, update, bot); err != nil { // Handle the command message
 				return err
 			}
 			continue
 		}
 
 		// Do something else with the message received
-		if err = messageHandler(update, bot); err != nil { // Handle the single message
+		if err = messageHandler(client, update, bot); err != nil { // Handle the single message
 			return err
 		}
 
