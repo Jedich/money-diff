@@ -17,9 +17,14 @@ func GetHistory(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 	msg := tgbotapi.NewMessage(bot.ChatID, "")
 	for _, payment := range payments {
 		msg.Text += fmt.Sprintf("%s: %.2f <i>%s</i>\n", payment.Username, payment.Value, payment.Comment)
-		if payment.Comment != "" {
-
-		}
+	}
+	directPaymentDao := impl.NewDirectPaymentDao(client)
+	dPayments, err := directPaymentDao.GetByChatID(bot.ChatID)
+	if err != nil {
+		return err
+	}
+	for _, payment := range dPayments {
+		msg.Text += fmt.Sprintf("%s -> %s: %.2f <i>%s</i>\n", payment.FromUsername, payment.ToUsername, payment.Value, payment.Comment)
 	}
 	msg.ParseMode = tgbotapi.ModeHTML
 	_, err = bot.Instance.Send(msg)

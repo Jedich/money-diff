@@ -25,10 +25,10 @@ func messageHandler(client *mongo.Client, update tgbotapi.Update, bot *tgbotapi.
 	}
 	message := update.Message.Text
 	botData := &helpers.BotUpdateData{
-		Instance: bot,
-		Update:   update,
-		ChatID:   update.Message.Chat.ID,
-		Username: update.Message.From.UserName,
+		Instance:   bot,
+		Update:     update,
+		ChatID:     update.Message.Chat.ID,
+		SenderName: update.Message.From.UserName,
 	}
 
 	var responseQ []interface{} // contain the message received

@@ -4,21 +4,22 @@ import (
 	"context"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"money-diff/dao/models"
 	"time"
 )
 
-type PaymentDaoImpl struct {
+type DirectPaymentDaoImpl struct {
 	client *mongo.Client
 }
 
-func NewPaymentDao(client *mongo.Client) *PaymentDaoImpl {
-	return &PaymentDaoImpl{client: client}
+func NewDirectPaymentDao(client *mongo.Client) *DirectPaymentDaoImpl {
+	return &DirectPaymentDaoImpl{client: client}
 }
 
-func (dao PaymentDaoImpl) Create(p *models.Payment) error {
-	collection := dao.client.Database("money").Collection("payments")
+func (dao DirectPaymentDaoImpl) Create(p *models.DirectPayment) error {
+	collection := dao.client.Database("money").Collection("direct_payments")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -31,13 +32,15 @@ func (dao PaymentDaoImpl) Create(p *models.Payment) error {
 	return nil
 }
 
-func (dao PaymentDaoImpl) GetGroupedByChatID(chatID int64) ([]bson.M, error) {
-	collection := dao.client.Database("money").Collection("payments")
+func (dao DirectPaymentDaoImpl) GetGroupedByChatID(chatID int64) ([]bson.M, error) {
+	collection := dao.client.Database("money").Collection("direct_payments")
 	filter := bson.D{
 		{"$match", bson.D{{"chat_id", chatID}}}}
 	groupStage := bson.D{
 		{"$group", bson.D{
-			{"_id", "$username"},
+			{"_id", primitive.NewObjectID()},
+			{"from", bson.D{{"$first", "$from"}}},
+			{"to", bson.D{{"$first", "$to"}}},
 			{"value", bson.D{{"$sum", "$value"}}},
 		}}}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -55,8 +58,8 @@ func (dao PaymentDaoImpl) GetGroupedByChatID(chatID int64) ([]bson.M, error) {
 	return results, nil
 }
 
-func (dao PaymentDaoImpl) GetByChatID(chatID int64) ([]models.Payment, error) {
-	collection := dao.client.Database("money").Collection("payments")
+func (dao DirectPaymentDaoImpl) GetByChatID(chatID int64) ([]models.DirectPayment, error) {
+	collection := dao.client.Database("money").Collection("direct_payments")
 	filter := bson.D{{"chat_id", chatID}}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -65,7 +68,7 @@ func (dao PaymentDaoImpl) GetByChatID(chatID int64) ([]models.Payment, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error querying: %s", err)
 	}
-	var results []models.Payment
+	var results []models.DirectPayment
 	if err = cur.All(context.TODO(), &results); err != nil {
 		return nil, fmt.Errorf("error querying: %s", err)
 	}

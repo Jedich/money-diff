@@ -9,5 +9,14 @@ type PaymentDao interface {
 	Create(p *models.Payment) error
 	/*Delete(id primitive.ObjectID) error
 	GetAll() ([]models.Payment, error)*/
-	GetByChatID(chatID int64) ([]bson.M, error)
+	GetGroupByChatID(chatID int64) ([]bson.M, error)
+	GetByChatID(chatID int64) ([]models.Payment, error)
+}
+
+type DirectPaymentDao interface {
+	Create(p *models.DirectPayment) error
+	/*Delete(id primitive.ObjectID) error
+	GetAll() ([]models.Payment, error)*/
+	GetGroupByChatID(chatID int64) ([]bson.M, error)
+	GetByChatID(chatID int64) ([]models.DirectPayment, error)
 }

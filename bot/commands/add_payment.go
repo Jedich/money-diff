@@ -19,12 +19,17 @@ func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 		return bot.SendMessage("Please input a correct float value.")
 	}
 
+	comment := strings.Join(args, " ")
+	if len(comment) > 50 {
+		return bot.SendMessage("Please provide a shorter description.")
+	}
+
 	payment := &models.Payment{
 		ID:       primitive.NewObjectID(),
 		ChatID:   bot.ChatID,
-		Username: bot.Username,
+		Username: bot.SenderName,
 		Value:    float32(value),
-		Comment:  strings.Join(args, " "),
+		Comment:  comment,
 	}
 
 	paymentDao := impl.NewPaymentDao(client)
