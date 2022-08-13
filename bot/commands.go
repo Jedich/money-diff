@@ -11,9 +11,11 @@ import (
 )
 
 var commandList = map[string]interface{}{
-	"help":  command.Help,
-	"ap":    command.AddPayment,
-	"total": command.GetTotal,
+	"help":    command.Help,
+	"ap":      command.AddPayment,
+	"adp":     command.AddDirectPayment,
+	"total":   command.GetTotal,
+	"history": command.GetHistory,
 }
 
 func cmdHandler(client *mongo.Client, update tgbotapi.Update, bot *tgbotapi.BotAPI) error {

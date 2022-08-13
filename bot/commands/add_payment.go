@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"fmt"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"money-diff/bot/helpers"
@@ -13,21 +11,20 @@ import (
 )
 
 func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) error {
-	fmt.Println("args:" + arguments)
-	value, err := strconv.ParseFloat(strings.Split(arguments, " ")[0], 32)
+	args := strings.Split(arguments, " ")
+	x, args := args[0], args[1:]
+
+	value, err := strconv.ParseFloat(x, 32)
 	if err != nil {
-		msg := tgbotapi.NewMessage(bot.Update.Message.Chat.ID, "Please input a correct float value.")
-		_, err = bot.Instance.Send(msg)
-		if err != nil {
-			return fmt.Errorf("error sending: %s", err)
-		}
-		return nil
+		return bot.SendMessage("Please input a correct float value.")
 	}
+
 	payment := &models.Payment{
 		ID:       primitive.NewObjectID(),
 		ChatID:   bot.ChatID,
 		Username: bot.Username,
 		Value:    float32(value),
+		Comment:  strings.Join(args, " "),
 	}
 
 	paymentDao := impl.NewPaymentDao(client)
@@ -36,10 +33,5 @@ func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 		return err
 	}
 
-	msg := tgbotapi.NewMessage(bot.ChatID, "Payment added to the vault!")
-	_, err = bot.Instance.Send(msg)
-	if err != nil {
-		return fmt.Errorf("error sending: %s", err)
-	}
-	return nil
+	return bot.SendMessage("Payment added to the vault!")
 }

@@ -32,7 +32,7 @@ func (dao PaymentDaoImpl) Create(p *models.Payment) error {
 	return nil
 }
 
-func (dao PaymentDaoImpl) GetByChatID(chatID int64) ([]bson.M, error) {
+func (dao PaymentDaoImpl) GetGroupedByChatID(chatID int64) ([]bson.M, error) {
 	collection := dao.client.Database("money").Collection("payments")
 	filter := bson.D{
 		{"$match", bson.D{{"chat_id", chatID}}}}
@@ -49,6 +49,27 @@ func (dao PaymentDaoImpl) GetByChatID(chatID int64) ([]bson.M, error) {
 		return nil, fmt.Errorf("error querying: %s", err)
 	}
 	var results []bson.M
+	if err = cur.All(context.TODO(), &results); err != nil {
+		return nil, fmt.Errorf("error querying: %s", err)
+	}
+
+	for _, result := range results {
+		fmt.Println(result)
+	}
+	return results, nil
+}
+
+func (dao PaymentDaoImpl) GetByChatID(chatID int64) ([]models.Payment, error) {
+	collection := dao.client.Database("money").Collection("payments")
+	filter := bson.D{{"chat_id", chatID}}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	cur, err := collection.Find(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("error querying: %s", err)
+	}
+	var results []models.Payment
 	if err = cur.All(context.TODO(), &results); err != nil {
 		return nil, fmt.Errorf("error querying: %s", err)
 	}

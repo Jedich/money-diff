@@ -7,6 +7,7 @@ type Payment struct {
 	ChatID   int64              `bson:"chat_id,omitempty"`
 	Username string             `bson:"username,omitempty"`
 	Value    float32            `bson:"value"`
+	Comment  string             `bson:"comment"`
 }
 
 type GroupedPayment struct {
