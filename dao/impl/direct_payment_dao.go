@@ -40,9 +40,7 @@ func (dao DirectPaymentDaoImpl) GetGroupedByChatID(chatID int64) ([]bson.M, erro
 			{Key: "_id", Value: bson.D{
 				bson.E{Key: "from", Value: "$from"},
 				bson.E{Key: "to", Value: "$to"},
-			}}, //primitive.NewObjectID()},
-			//{"from", bson.D{{"$first", "$from"}}},
-			//{"to", bson.D{{"$first", "$to"}}},
+			}},
 			{"value", bson.D{{"$sum", "$value"}}},
 		}}}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

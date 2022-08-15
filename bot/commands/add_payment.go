@@ -40,5 +40,17 @@ func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 		return err
 	}
 
+	participant := &models.Participant{
+		ID:     primitive.ObjectID{},
+		UserID: bot.Update.Message.From.ID,
+		ChatID: bot.ChatID,
+	}
+
+	participantDao := impl.NewParticipantDao(client)
+	err = participantDao.Create(participant)
+	if err != nil {
+		return err
+	}
+
 	return bot.SendMessage("Payment added to the vault!")
 }

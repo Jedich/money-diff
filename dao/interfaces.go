@@ -20,3 +20,8 @@ type DirectPaymentDao interface {
 	GetGroupByChatID(chatID int64) ([]bson.M, error)
 	GetByChatID(chatID int64) ([]models.DirectPayment, error)
 }
+
+type ParticipantDao interface {
+	Create(p *models.Participant) error
+	GetByChatID(chatID int64) ([]models.Participant, error)
+}

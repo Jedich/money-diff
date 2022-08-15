@@ -13,6 +13,9 @@ func GetTotal(client *mongo.Client, bot *helpers.BotUpdateData, arguments string
 	paymentDao := impl.NewPaymentDao(client)
 	directPaymentDao := impl.NewDirectPaymentDao(client)
 	payments, err := paymentDao.GetGroupedByChatID(bot.ChatID)
+	if err != nil {
+		return err
+	}
 	directPayments, err := directPaymentDao.GetGroupedByChatID(bot.ChatID)
 	if err != nil {
 		return err

@@ -16,6 +16,7 @@ var commandList = map[string]interface{}{
 	"adp":     command.AddDirectPayment,
 	"total":   command.GetTotal,
 	"history": command.GetHistory,
+	"finish":  command.Finish,
 }
 
 func cmdHandler(client *mongo.Client, update tgbotapi.Update, bot *tgbotapi.BotAPI) error {

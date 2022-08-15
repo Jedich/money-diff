@@ -38,7 +38,7 @@ func AddDirectPayment(client *mongo.Client, bot *helpers.BotUpdateData, argument
 		ID:           primitive.NewObjectID(),
 		ChatID:       bot.ChatID,
 		FromUsername: bot.SenderName,
-		ToUsername:   bot.Update.Message.ReplyToMessage.From.UserName,
+		ToUsername:   target.UserName,
 		Value:        float32(value),
 		Comment:      strings.Join(args, " "),
 	}
