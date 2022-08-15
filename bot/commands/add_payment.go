@@ -8,6 +8,7 @@ import (
 	"money-diff/dao/models"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) error {
@@ -20,8 +21,9 @@ func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 	}
 
 	comment := strings.Join(args, " ")
-	if len(comment) > 50 {
-		return bot.SendMessage("Please provide a shorter description.")
+	n := utf8.RuneCountInString(comment)
+	if n > 50 {
+		return bot.SendMessage("Please provide a shorter description. (%s > 50)", n)
 	}
 
 	payment := &models.Payment{

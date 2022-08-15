@@ -8,6 +8,7 @@ import (
 	"money-diff/dao/models"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 func AddDirectPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) error {
@@ -23,8 +24,9 @@ func AddDirectPayment(client *mongo.Client, bot *helpers.BotUpdateData, argument
 	x, args := args[0], args[1:]
 
 	comment := strings.Join(args, " ")
-	if len(comment) > 50 {
-		return bot.SendMessage("Please provide a shorter description.")
+	n := utf8.RuneCountInString(comment)
+	if n > 50 {
+		return bot.SendMessage("Please provide a shorter description. (%s > 50)", n)
 	}
 
 	value, err := strconv.ParseFloat(x, 32)

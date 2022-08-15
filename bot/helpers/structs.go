@@ -14,7 +14,12 @@ type BotUpdateData struct {
 
 func (bot *BotUpdateData) SendMessage(text string, a ...any) error {
 	msg := tgbotapi.NewMessage(bot.ChatID, "")
-	msg.Text = fmt.Sprintf(text, a)
+	msg.Text = ""
+	if len(a) != 0 {
+		msg.Text = fmt.Sprintf(text, a)
+	} else {
+		msg.Text = fmt.Sprintf(text)
+	}
 	_, err := bot.Instance.Send(msg)
 	if err != nil {
 		return fmt.Errorf("error sending: %s", err)

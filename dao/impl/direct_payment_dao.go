@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"money-diff/dao/models"
 	"time"
@@ -37,10 +36,13 @@ func (dao DirectPaymentDaoImpl) GetGroupedByChatID(chatID int64) ([]bson.M, erro
 	filter := bson.D{
 		{"$match", bson.D{{"chat_id", chatID}}}}
 	groupStage := bson.D{
-		{"$group", bson.D{
-			{"_id", primitive.NewObjectID()},
-			{"from", bson.D{{"$first", "$from"}}},
-			{"to", bson.D{{"$first", "$to"}}},
+		{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: bson.D{
+				bson.E{Key: "from", Value: "$from"},
+				bson.E{Key: "to", Value: "$to"},
+			}}, //primitive.NewObjectID()},
+			//{"from", bson.D{{"$first", "$from"}}},
+			//{"to", bson.D{{"$first", "$to"}}},
 			{"value", bson.D{{"$sum", "$value"}}},
 		}}}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
