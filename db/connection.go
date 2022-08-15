@@ -32,5 +32,5 @@ func CloseConnection(c *mongo.Client) {
 	if err := c.Disconnect(context.Background()); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("disconnected from dao")
+	fmt.Println("disconnected from repository")
 }

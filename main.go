@@ -4,7 +4,7 @@ import (
 	"log"
 	"money-diff/bot"
 	"money-diff/bot/helpers"
-	"money-diff/dao/db"
+	"money-diff/db"
 )
 
 // main function start the application.

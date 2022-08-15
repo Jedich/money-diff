@@ -6,17 +6,17 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"money-diff/bot/helpers"
-	"money-diff/dao/impl"
+	r "money-diff/repository"
 )
 
 func GetTotal(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) error {
-	paymentDao := impl.NewPaymentDao(client)
-	directPaymentDao := impl.NewDirectPaymentDao(client)
-	payments, err := paymentDao.GetGroupedByChatID(bot.ChatID)
+	paymentRepo := r.NewPaymentRepo(client)
+	directPaymentRepo := r.NewDirectPaymentRepo(client)
+	payments, err := paymentRepo.GetGroupByChatID(bot.ChatID)
 	if err != nil {
 		return err
 	}
-	directPayments, err := directPaymentDao.GetGroupedByChatID(bot.ChatID)
+	directPayments, err := directPaymentRepo.GetGroupByChatID(bot.ChatID)
 	if err != nil {
 		return err
 	}

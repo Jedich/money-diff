@@ -4,8 +4,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"money-diff/bot/helpers"
-	"money-diff/dao/impl"
-	"money-diff/dao/models"
+	"money-diff/model"
+	r "money-diff/repository"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -34,7 +34,7 @@ func AddDirectPayment(client *mongo.Client, bot *helpers.BotUpdateData, argument
 		return bot.SendMessage("Please input a correct float value.")
 	}
 
-	payment := &models.DirectPayment{
+	payment := &model.DirectPayment{
 		ID:           primitive.NewObjectID(),
 		ChatID:       bot.ChatID,
 		FromUsername: bot.SenderName,
@@ -43,8 +43,8 @@ func AddDirectPayment(client *mongo.Client, bot *helpers.BotUpdateData, argument
 		Comment:      strings.Join(args, " "),
 	}
 
-	paymentDao := impl.NewDirectPaymentDao(client)
-	err = paymentDao.Create(payment)
+	paymentRepo := r.NewDirectPaymentRepo(client)
+	err = paymentRepo.Create(payment)
 	if err != nil {
 		return err
 	}

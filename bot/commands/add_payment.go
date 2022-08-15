@@ -4,8 +4,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"money-diff/bot/helpers"
-	"money-diff/dao/impl"
-	"money-diff/dao/models"
+	"money-diff/model"
+	r "money-diff/repository"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -26,7 +26,7 @@ func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 		return bot.SendMessage("Please provide a shorter description. (%s > 50)", n)
 	}
 
-	payment := &models.Payment{
+	payment := &model.Payment{
 		ID:       primitive.NewObjectID(),
 		ChatID:   bot.ChatID,
 		Username: bot.SenderName,
@@ -34,19 +34,19 @@ func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 		Comment:  comment,
 	}
 
-	paymentDao := impl.NewPaymentDao(client)
-	err = paymentDao.Create(payment)
+	paymentRepo := r.NewPaymentRepo(client)
+	err = paymentRepo.Create(payment)
 	if err != nil {
 		return err
 	}
 
-	participant := &models.Participant{
+	participant := &model.Participant{
 		ID:     primitive.ObjectID{},
 		UserID: bot.Update.Message.From.ID,
 		ChatID: bot.ChatID,
 	}
 
-	participantDao := impl.NewParticipantDao(client)
+	participantDao := r.NewParticipantRepo(client)
 	err = participantDao.Create(participant)
 	if err != nil {
 		return err

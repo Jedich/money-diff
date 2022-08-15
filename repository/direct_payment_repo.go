@@ -1,23 +1,29 @@
-package impl
+package repository
 
 import (
 	"context"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"money-diff/dao/models"
+	"money-diff/model"
 	"time"
 )
 
-type DirectPaymentDaoImpl struct {
+type DirectPaymentRepository interface {
+	Create(p *model.DirectPayment) error
+	GetGroupByChatID(chatID int64) ([]bson.M, error)
+	GetByChatID(chatID int64) ([]model.DirectPayment, error)
+}
+
+type directPaymentRepoImpl struct {
 	client *mongo.Client
 }
 
-func NewDirectPaymentDao(client *mongo.Client) *DirectPaymentDaoImpl {
-	return &DirectPaymentDaoImpl{client: client}
+func NewDirectPaymentRepo(client *mongo.Client) DirectPaymentRepository {
+	return directPaymentRepoImpl{client: client}
 }
 
-func (dao DirectPaymentDaoImpl) Create(p *models.DirectPayment) error {
+func (dao directPaymentRepoImpl) Create(p *model.DirectPayment) error {
 	collection := dao.client.Database("money").Collection("direct_payments")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -31,7 +37,7 @@ func (dao DirectPaymentDaoImpl) Create(p *models.DirectPayment) error {
 	return nil
 }
 
-func (dao DirectPaymentDaoImpl) GetGroupedByChatID(chatID int64) ([]bson.M, error) {
+func (dao directPaymentRepoImpl) GetGroupByChatID(chatID int64) ([]bson.M, error) {
 	collection := dao.client.Database("money").Collection("direct_payments")
 	filter := bson.D{
 		{"$match", bson.D{{"chat_id", chatID}}}}
@@ -58,7 +64,7 @@ func (dao DirectPaymentDaoImpl) GetGroupedByChatID(chatID int64) ([]bson.M, erro
 	return results, nil
 }
 
-func (dao DirectPaymentDaoImpl) GetByChatID(chatID int64) ([]models.DirectPayment, error) {
+func (dao directPaymentRepoImpl) GetByChatID(chatID int64) ([]model.DirectPayment, error) {
 	collection := dao.client.Database("money").Collection("direct_payments")
 	filter := bson.D{{"chat_id", chatID}}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -68,7 +74,7 @@ func (dao DirectPaymentDaoImpl) GetByChatID(chatID int64) ([]models.DirectPaymen
 	if err != nil {
 		return nil, fmt.Errorf("error querying: %s", err)
 	}
-	var results []models.DirectPayment
+	var results []model.DirectPayment
 	if err = cur.All(context.TODO(), &results); err != nil {
 		return nil, fmt.Errorf("error querying: %s", err)
 	}

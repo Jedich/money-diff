@@ -1,23 +1,29 @@
-package impl
+package repository
 
 import (
 	"context"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"money-diff/dao/models"
+	"money-diff/model"
 	"time"
 )
 
-type PaymentDaoImpl struct {
+type PaymentRepository interface {
+	Create(p *model.Payment) error
+	GetGroupByChatID(chatID int64) ([]bson.M, error)
+	GetByChatID(chatID int64) ([]model.Payment, error)
+}
+
+type paymentRepoImpl struct {
 	client *mongo.Client
 }
 
-func NewPaymentDao(client *mongo.Client) *PaymentDaoImpl {
-	return &PaymentDaoImpl{client: client}
+func NewPaymentRepo(client *mongo.Client) PaymentRepository {
+	return paymentRepoImpl{client: client}
 }
 
-func (dao PaymentDaoImpl) Create(p *models.Payment) error {
+func (dao paymentRepoImpl) Create(p *model.Payment) error {
 	collection := dao.client.Database("money").Collection("payments")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -31,7 +37,7 @@ func (dao PaymentDaoImpl) Create(p *models.Payment) error {
 	return nil
 }
 
-func (dao PaymentDaoImpl) GetGroupedByChatID(chatID int64) ([]bson.M, error) {
+func (dao paymentRepoImpl) GetGroupByChatID(chatID int64) ([]bson.M, error) {
 	collection := dao.client.Database("money").Collection("payments")
 	filter := bson.D{
 		{"$match", bson.D{{"chat_id", chatID}}}}
@@ -55,7 +61,7 @@ func (dao PaymentDaoImpl) GetGroupedByChatID(chatID int64) ([]bson.M, error) {
 	return results, nil
 }
 
-func (dao PaymentDaoImpl) GetByChatID(chatID int64) ([]models.Payment, error) {
+func (dao paymentRepoImpl) GetByChatID(chatID int64) ([]model.Payment, error) {
 	collection := dao.client.Database("money").Collection("payments")
 	filter := bson.D{{"chat_id", chatID}}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -65,7 +71,7 @@ func (dao PaymentDaoImpl) GetByChatID(chatID int64) ([]models.Payment, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error querying: %s", err)
 	}
-	var results []models.Payment
+	var results []model.Payment
 	if err = cur.All(context.TODO(), &results); err != nil {
 		return nil, fmt.Errorf("error querying: %s", err)
 	}

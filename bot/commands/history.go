@@ -5,12 +5,12 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"go.mongodb.org/mongo-driver/mongo"
 	"money-diff/bot/helpers"
-	"money-diff/dao/impl"
+	r "money-diff/repository"
 )
 
 func GetHistory(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) error {
-	paymentDao := impl.NewPaymentDao(client)
-	payments, err := paymentDao.GetByChatID(bot.ChatID)
+	paymentRepo := r.NewPaymentRepo(client)
+	payments, err := paymentRepo.GetByChatID(bot.ChatID)
 	if err != nil {
 		return err
 	}
@@ -18,8 +18,8 @@ func GetHistory(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 	for _, payment := range payments {
 		msg.Text += fmt.Sprintf("%s: %.2f <i>%s</i>\n", payment.Username, payment.Value, payment.Comment)
 	}
-	directPaymentDao := impl.NewDirectPaymentDao(client)
-	dPayments, err := directPaymentDao.GetByChatID(bot.ChatID)
+	directPaymentRepo := r.NewDirectPaymentRepo(client)
+	dPayments, err := directPaymentRepo.GetByChatID(bot.ChatID)
 	if err != nil {
 		return err
 	}

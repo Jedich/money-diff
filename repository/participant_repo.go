@@ -1,4 +1,4 @@
-package impl
+package repository
 
 import (
 	"context"
@@ -6,19 +6,24 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"money-diff/dao/models"
+	"money-diff/model"
 	"time"
 )
 
-type ParticipantDaoImpl struct {
+type ParticipantRepository interface {
+	Create(p *model.Participant) error
+	GetByChatID(chatID int64) ([]model.Participant, error)
+}
+
+type ParticipantRepoImpl struct {
 	client *mongo.Client
 }
 
-func NewParticipantDao(client *mongo.Client) *ParticipantDaoImpl {
-	return &ParticipantDaoImpl{client: client}
+func NewParticipantRepo(client *mongo.Client) ParticipantRepository {
+	return ParticipantRepoImpl{client: client}
 }
 
-func (dao ParticipantDaoImpl) Create(p *models.Participant) error {
+func (dao ParticipantRepoImpl) Create(p *model.Participant) error {
 	collection := dao.client.Database("money").Collection("participants")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -36,7 +41,7 @@ func (dao ParticipantDaoImpl) Create(p *models.Participant) error {
 	return nil
 }
 
-func (dao ParticipantDaoImpl) GetByChatID(chatID int64) ([]models.Participant, error) {
+func (dao ParticipantRepoImpl) GetByChatID(chatID int64) ([]model.Participant, error) {
 	collection := dao.client.Database("money").Collection("participants")
 	filter := bson.D{{"chat_id", chatID}}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -46,7 +51,7 @@ func (dao ParticipantDaoImpl) GetByChatID(chatID int64) ([]models.Participant, e
 	if err != nil {
 		return nil, fmt.Errorf("error querying: %s", err)
 	}
-	var results []models.Participant
+	var results []model.Participant
 	if err = cur.All(context.TODO(), &results); err != nil {
 		return nil, fmt.Errorf("error querying: %s", err)
 	}
