@@ -23,10 +23,10 @@ func cmdHandler(client *mongo.Client, update tgbotapi.Update, bot *tgbotapi.BotA
 	commandReq := update.Message.Command()
 	commandArgs := update.Message.CommandArguments()
 	botData := &helpers.BotUpdateData{
-		Instance:   bot,
+		BotAPI:     bot,
 		Update:     update,
-		ChatID:     update.Message.Chat.ID,
 		SenderName: update.Message.From.UserName,
+		ChatID:     update.Message.Chat.ID,
 	}
 
 	if _, ok := commandList[commandReq]; !ok {

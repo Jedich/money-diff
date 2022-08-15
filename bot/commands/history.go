@@ -27,7 +27,7 @@ func GetHistory(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 		msg.Text += fmt.Sprintf("%s -> %s: %.2f <i>%s</i>\n", payment.FromUsername, payment.ToUsername, payment.Value, payment.Comment)
 	}
 	msg.ParseMode = tgbotapi.ModeHTML
-	_, err = bot.Instance.Send(msg)
+	_, err = bot.Send(msg)
 	if err != nil {
 		return fmt.Errorf("error sending: %s", err)
 	}

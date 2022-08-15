@@ -18,7 +18,7 @@ func Finish(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) 
 	}
 
 	msg.ReplyMarkup = keyboard
-	_, err := bot.Instance.Send(msg)
+	_, err := bot.Send(msg)
 	if err != nil {
 		return err
 	}

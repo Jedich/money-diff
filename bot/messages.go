@@ -25,7 +25,7 @@ func messageHandler(client *mongo.Client, update tgbotapi.Update, bot *tgbotapi.
 	}
 	message := update.Message.Text
 	botData := &helpers.BotUpdateData{
-		Instance:   bot,
+		BotAPI:     bot,
 		Update:     update,
 		ChatID:     update.Message.Chat.ID,
 		SenderName: update.Message.From.UserName,

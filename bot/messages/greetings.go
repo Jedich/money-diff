@@ -13,7 +13,7 @@ func Greet(client *mongo.Client, bot *helpers.BotUpdateData, message string) err
 	msg := tgbotapi.NewMessage(bot.ChatID, "")
 	msg.Text = "Hiiiii!"
 
-	_, err := bot.Instance.Send(msg)
+	_, err := bot.Send(msg)
 
 	return err
 }

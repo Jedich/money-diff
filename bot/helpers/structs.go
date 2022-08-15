@@ -6,7 +6,7 @@ import (
 )
 
 type BotUpdateData struct {
-	Instance   *tgbotapi.BotAPI
+	*tgbotapi.BotAPI
 	Update     tgbotapi.Update
 	SenderName string
 	ChatID     int64
@@ -20,7 +20,7 @@ func (bot *BotUpdateData) SendMessage(text string, a ...any) error {
 	} else {
 		msg.Text = fmt.Sprintf(text)
 	}
-	_, err := bot.Instance.Send(msg)
+	_, err := bot.Send(msg)
 	if err != nil {
 		return fmt.Errorf("error sending: %s", err)
 	}

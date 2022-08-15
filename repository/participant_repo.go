@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"money-diff/model"
 	"time"
 )
@@ -29,11 +28,7 @@ func (dao ParticipantRepoImpl) Create(p *model.Participant) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	opts := options.Update().SetUpsert(true)
-	filter := bson.D{{"_id", p.ID}}
-	update := bson.D{{"$set", bson.D{{"chat_id", p.ChatID}}}, {"$set", bson.D{{"user_id", p.UserID}}}}
-
-	_, err := collection.UpdateOne(ctx, filter, update, opts)
+	_, err := collection.InsertOne(ctx, p)
 	if err != nil {
 		return fmt.Errorf("error inserting: %s", err)
 	}

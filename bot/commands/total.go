@@ -28,7 +28,7 @@ func GetTotal(client *mongo.Client, bot *helpers.BotUpdateData, arguments string
 		direct := payment["_id"].(bson.M)
 		msg.Text += fmt.Sprintf("%v -> %v: %.2f\n", direct["from"], direct["to"], payment["value"])
 	}
-	_, err = bot.Instance.Send(msg)
+	_, err = bot.Send(msg)
 	if err != nil {
 		return fmt.Errorf("error sending: %s", err)
 	}

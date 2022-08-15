@@ -12,7 +12,7 @@ func Help(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) er
 	msg := tgbotapi.NewMessage(bot.ChatID, "")
 	msg.Text = "this is the help"
 
-	_, err := bot.Instance.Send(msg)
+	_, err := bot.Send(msg)
 
 	return err
 }
