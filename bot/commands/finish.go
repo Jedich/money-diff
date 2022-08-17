@@ -27,19 +27,14 @@ func Finish(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) 
 			return err
 		}
 
-		cbSuccess := func() {
-			err := bot.SendMessage("Request accepted! Calculating...")
-			if err != nil {
-				panic(err)
-			}
+		cbSuccess := func() error {
+			return bot.SendMessage("Request accepted! Calculating...")
 		}
 
-		cbFailure := func() {
-			err := bot.SendMessage("Request was cancelled.")
-			if err != nil {
-				panic(err)
-			}
+		cbFailure := func() error {
+			return bot.SendMessage("Request was cancelled.")
 		}
+
 		repo := repository.NewConfirmRepo(client)
 		err = repo.Add(bot.ChatID)
 		if err != nil {
@@ -47,12 +42,13 @@ func Finish(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) 
 		}
 
 		cb := callback.NewCallback(bot.ChatID, cbSuccess, cbFailure)
-		cb.Start(5 * time.Second)
 
-		err = repo.Finish(bot.ChatID)
+		err = cb.Start(5 * time.Second)
+		repo.Finish(bot.ChatID)
 		if err != nil {
 			return err
 		}
+
 		_, err = bot.DeleteMessage(tgbotapi.DeleteMessageConfig{MessageID: sent.MessageID, ChatID: bot.ChatID})
 		if err != nil {
 			return err

@@ -1,7 +1,6 @@
 package callbacks
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -13,7 +12,7 @@ func GetCallback(chatID int64) (Callback, bool) {
 }
 
 type Callback interface {
-	Start(timeout time.Duration)
+	Start(timeout time.Duration) error
 	Finish()
 	Cancel()
 }
@@ -21,11 +20,11 @@ type Callback interface {
 type genericCallback struct {
 	chatID      int64
 	channel     *chan bool
-	execSuccess func()
-	execFailure func()
+	execSuccess func() error
+	execFailure func() error
 }
 
-func NewCallback(chatID int64, execSuccess func(), execFailure func()) Callback {
+func NewCallback(chatID int64, execSuccess func() error, execFailure func() error) Callback {
 	cb := genericCallback{execSuccess: execSuccess, execFailure: execFailure, chatID: chatID}
 	callbacks[chatID] = &cb
 	return &cb
@@ -39,9 +38,9 @@ func (g *genericCallback) Cancel() {
 	*g.channel <- false
 }
 
-func (g *genericCallback) Start(timeout time.Duration) {
+func (g *genericCallback) Start(timeout time.Duration) error {
 	if g.channel != nil {
-		return
+		return nil
 	}
 	ch := make(chan bool, 1)
 	g.channel = &ch
@@ -50,14 +49,22 @@ func (g *genericCallback) Start(timeout time.Duration) {
 	select {
 	case res := <-*g.channel:
 		if !res {
-			fmt.Println("---------------------IM DED")
-			g.execFailure()
-			return
+			err := g.execFailure()
+			if err != nil {
+				return err
+			}
+			return nil
 		}
-		g.execSuccess()
-		return
+		err := g.execSuccess()
+		if err != nil {
+			return err
+		}
+		return nil
 	case <-time.After(timeout):
-		g.execFailure()
-		return
+		err := g.execFailure()
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 }

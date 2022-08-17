@@ -23,7 +23,7 @@ type ConfirmRepository interface {
 	GetUsers(chatID int64) UserSet
 	HasUsers(chatID int64) bool
 	DeleteUser(chatID int64, userID int) error
-	Finish(chatID int64) error
+	Finish(chatID int64)
 }
 
 func NewConfirmRepo(client *mongo.Client) ConfirmRepository {
@@ -64,10 +64,9 @@ func (c confirmRepo) DeleteUser(chatID int64, userID int) error {
 	return nil
 }
 
-func (c confirmRepo) Finish(chatID int64) error {
+func (c confirmRepo) Finish(chatID int64) {
 	if _, ok := data[chatID]; !ok {
-		return nil
+		return
 	}
 	delete(data, chatID)
-	return nil
 }

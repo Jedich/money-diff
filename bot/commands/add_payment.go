@@ -14,10 +14,23 @@ import (
 )
 
 func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) error {
+	var valueString string
+	var username string
 	args := strings.Split(arguments, " ")
-	x, args := args[0], args[1:]
+	if bot.ChatID == int64(bot.Update.Message.From.ID) {
+		if len(args) < 2 {
+			return bot.SendMessage("Please input a correct command.")
+		}
+		username, valueString, args = args[0], args[1], args[2:]
+	} else {
+		if len(args) < 1 {
+			return bot.SendMessage("Please input a correct command.")
+		}
+		valueString, args = args[0], args[1:]
+		username = bot.SenderName
+	}
 
-	value, err := strconv.ParseFloat(x, 32)
+	value, err := strconv.ParseFloat(valueString, 32)
 	if err != nil {
 		return bot.SendMessage("Please input a correct float value.")
 	}
@@ -27,12 +40,11 @@ func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 	if n > 50 {
 		return bot.SendMessage("Please provide a shorter description. (%s > 50)", n)
 	}
-
 	err = db.WithTransaction(client, func(ctx mongo.SessionContext, client *mongo.Client) error {
 		payment := &model.Payment{
 			ID:       primitive.NewObjectID(),
 			ChatID:   bot.ChatID,
-			Username: bot.SenderName,
+			Username: username,
 			Value:    float32(value),
 			Comment:  comment,
 		}
