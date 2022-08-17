@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
@@ -29,6 +30,17 @@ func StartBot(token string, client *mongo.Client) error {
 	}
 
 	for update := range updates {
+		if update.CallbackQuery != nil {
+			//_ := update.CallbackQuery.Data
+			//classesMap[update.CallbackQuery.From.ID] = class
+			_, err := bot.Send(tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID,
+				"Ok, I remember"))
+			fmt.Println(update.CallbackQuery.Data)
+			if err != nil {
+				return err
+			}
+		}
+
 		if update.Message == nil {
 			continue
 		}

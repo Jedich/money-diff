@@ -10,7 +10,7 @@ import (
 )
 
 type PaymentRepository interface {
-	Create(p *model.Payment) error
+	Create(ctx context.Context, p *model.Payment) error
 	GetGroupByChatID(chatID int64) ([]bson.M, error)
 	GetByChatID(chatID int64) ([]model.Payment, error)
 }
@@ -23,11 +23,8 @@ func NewPaymentRepo(client *mongo.Client) PaymentRepository {
 	return paymentRepoImpl{client: client}
 }
 
-func (dao paymentRepoImpl) Create(p *model.Payment) error {
+func (dao paymentRepoImpl) Create(ctx context.Context, p *model.Payment) error {
 	collection := dao.client.Database("money").Collection("payments")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
 
 	_, err := collection.InsertOne(ctx, p)
 	if err != nil {

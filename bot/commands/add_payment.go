@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"money-diff/bot/helpers"
@@ -27,7 +28,7 @@ func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 		return bot.SendMessage("Please provide a shorter description. (%s > 50)", n)
 	}
 
-	err = db.WithTransaction(client, func(client *mongo.Client) error {
+	err = db.WithTransaction(client, func(ctx mongo.SessionContext, client *mongo.Client) error {
 		payment := &model.Payment{
 			ID:       primitive.NewObjectID(),
 			ChatID:   bot.ChatID,
@@ -37,23 +38,24 @@ func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 		}
 
 		paymentRepo := r.NewPaymentRepo(client)
-		err = paymentRepo.Create(payment)
+		err = paymentRepo.Create(ctx, payment)
 		if err != nil {
 			return err
 		}
 
-		participant := &model.Participant{
-			UserID: bot.Update.Message.From.ID,
-			ChatID: bot.ChatID,
-		}
-
-		participantDao := r.NewParticipantRepo(client)
-		err = participantDao.Create(participant)
-		if err != nil {
-			return err
-		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	participant := &model.Participant{
+		UserID: bot.Update.Message.From.ID,
+		ChatID: bot.ChatID,
+	}
+
+	participantDao := r.NewParticipantRepo(client)
+	err = participantDao.Create(context.Background(), participant)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"money-diff/bot/helpers"
@@ -35,7 +36,7 @@ func AddDirectPayment(client *mongo.Client, bot *helpers.BotUpdateData, argument
 		return bot.SendMessage("Please input a correct float value.")
 	}
 
-	err = db.WithTransaction(client, func(client *mongo.Client) error {
+	err = db.WithTransaction(client, func(ctx mongo.SessionContext, client *mongo.Client) error {
 		payment := &model.DirectPayment{
 			ID:           primitive.NewObjectID(),
 			ChatID:       bot.ChatID,
@@ -45,32 +46,32 @@ func AddDirectPayment(client *mongo.Client, bot *helpers.BotUpdateData, argument
 			Comment:      strings.Join(args, " "),
 		}
 		paymentRepo := r.NewDirectPaymentRepo(client)
-		err = paymentRepo.Create(payment)
-		if err != nil {
-			return err
-		}
-
-		participantDao := r.NewParticipantRepo(client)
-
-		participant := &model.Participant{
-			UserID: bot.Update.Message.From.ID,
-			ChatID: bot.ChatID,
-		}
-		err = participantDao.Create(participant)
-		if err != nil {
-			return err
-		}
-
-		participant = &model.Participant{
-			UserID: target.ID,
-			ChatID: bot.ChatID,
-		}
-		err = participantDao.Create(participant)
+		err = paymentRepo.Create(ctx, payment)
 		if err != nil {
 			return err
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	participantDao := r.NewParticipantRepo(client)
+
+	participant := &model.Participant{
+		UserID: bot.Update.Message.From.ID,
+		ChatID: bot.ChatID,
+	}
+	err = participantDao.Create(context.Background(), participant)
+	if err != nil {
+		return err
+	}
+
+	participant = &model.Participant{
+		UserID: target.ID,
+		ChatID: bot.ChatID,
+	}
+	err = participantDao.Create(context.Background(), participant)
 	if err != nil {
 		return err
 	}

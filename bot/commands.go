@@ -1,8 +1,8 @@
 package bot
 
 import (
-	"fmt"
 	"go.mongodb.org/mongo-driver/mongo"
+	"log"
 	"money-diff/bot/helpers"
 
 	command "money-diff/bot/commands"
@@ -36,7 +36,11 @@ func cmdHandler(client *mongo.Client, update tgbotapi.Update, bot *tgbotapi.BotA
 	err := commandList[commandReq].(func(*mongo.Client, *helpers.BotUpdateData, string) error)(client, botData, commandArgs)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
+		err := botData.SendMessage("Toaster is broken")
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

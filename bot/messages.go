@@ -17,6 +17,13 @@ var regularMsgs = map[string]interface{}{
 	"hi":        msg.Greet,
 	"бот додай": command.AddPayment,
 	"bot add":   command.AddPayment,
+	"даун": func(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) error {
+		err := bot.SendMessage("Сам такий")
+		if err != nil {
+			return err
+		}
+		return nil
+	},
 }
 
 func messageHandler(client *mongo.Client, update tgbotapi.Update, bot *tgbotapi.BotAPI) error {

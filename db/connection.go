@@ -48,25 +48,31 @@ func CloseConnection(c *mongo.Client) {
 
 //WithTransaction run queries with transaction
 //return error if aborted
-func WithTransaction(client *mongo.Client, toRun func(*mongo.Client) error) error {
-	err := client.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
-		if err := sessionContext.StartTransaction(); err != nil {
+func WithTransaction(client *mongo.Client, toRun func(mongo.SessionContext, *mongo.Client) error) error {
+	session, err := client.StartSession()
+	if err != nil {
+		panic(err)
+	}
+	defer session.EndSession(context.Background())
+
+	err = mongo.WithSession(context.Background(), session, func(sessionContext mongo.SessionContext) error {
+		//return err
+		if err = session.StartTransaction(); err != nil {
 			return err
 		}
 
 		//db operations
-		err := toRun(client)
+		err := toRun(sessionContext, client)
 
-		if err != nil {
-			err = sessionContext.AbortTransaction(sessionContext)
-			return err
-		}
-		if err = sessionContext.CommitTransaction(sessionContext); err != nil {
-			return err
+		if err = session.CommitTransaction(sessionContext); err != nil {
+			log.Fatal(err)
 		}
 		return nil
 	})
 	if err != nil {
+		if abortErr := session.AbortTransaction(context.Background()); abortErr != nil {
+			panic(abortErr)
+		}
 		return err
 	}
 	return nil

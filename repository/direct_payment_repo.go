@@ -10,7 +10,7 @@ import (
 )
 
 type DirectPaymentRepository interface {
-	Create(p *model.DirectPayment) error
+	Create(ctx context.Context, p *model.DirectPayment) error
 	GetGroupByChatID(chatID int64) ([]bson.M, error)
 	GetByChatID(chatID int64) ([]model.DirectPayment, error)
 }
@@ -23,11 +23,8 @@ func NewDirectPaymentRepo(client *mongo.Client) DirectPaymentRepository {
 	return directPaymentRepoImpl{client: client}
 }
 
-func (dao directPaymentRepoImpl) Create(p *model.DirectPayment) error {
+func (dao directPaymentRepoImpl) Create(ctx context.Context, p *model.DirectPayment) error {
 	collection := dao.client.Database("money").Collection("direct_payments")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
 
 	_, err := collection.InsertOne(ctx, p)
 	if err != nil {

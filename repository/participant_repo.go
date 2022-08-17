@@ -5,38 +5,44 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"log"
 	"money-diff/model"
 	"time"
 )
 
 type ParticipantRepository interface {
-	Create(p *model.Participant) error
+	Create(ctx context.Context, p *model.Participant) error
 	GetByChatID(chatID int64) ([]model.Participant, error)
 }
 
-type ParticipantRepoImpl struct {
+type participantRepoImpl struct {
 	client *mongo.Client
 }
 
 func NewParticipantRepo(client *mongo.Client) ParticipantRepository {
-	return ParticipantRepoImpl{client: client}
+	return participantRepoImpl{client: client}
 }
 
-func (dao ParticipantRepoImpl) Create(p *model.Participant) error {
+func (dao participantRepoImpl) Create(ctx context.Context, p *model.Participant) error {
 	collection := dao.client.Database("money").Collection("participants")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
 
 	_, err := collection.InsertOne(ctx, p)
 	if err != nil {
+		if e, ok := err.(mongo.WriteException); ok {
+			for _, we := range e.WriteErrors {
+				if we.Code == 11000 {
+					log.Println("Found duplicate in participants, skipping")
+					return nil
+				}
+			}
+		}
 		return fmt.Errorf("error inserting: %s", err)
 	}
 
 	return nil
 }
 
-func (dao ParticipantRepoImpl) GetByChatID(chatID int64) ([]model.Participant, error) {
+func (dao participantRepoImpl) GetByChatID(chatID int64) ([]model.Participant, error) {
 	collection := dao.client.Database("money").Collection("participants")
 	filter := bson.D{{"chat_id", chatID}}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
