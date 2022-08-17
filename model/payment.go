@@ -6,11 +6,11 @@ type Payment struct {
 	ID       primitive.ObjectID `bson:"_id"`
 	ChatID   int64              `bson:"chat_id,omitempty"`
 	Username string             `bson:"username,omitempty"`
-	Value    float32            `bson:"value"`
+	Value    float64            `bson:"value"`
 	Comment  string             `bson:"comment"`
 }
 
 type GroupedPayment struct {
-	Username string  `bson:"username,omitempty"`
-	Total    float32 `bson:"value"`
+	Username string  `bson:"_id,omitempty"`
+	Total    float64 `bson:"value"`
 }

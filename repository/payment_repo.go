@@ -11,7 +11,7 @@ import (
 
 type PaymentRepository interface {
 	Create(ctx context.Context, p *model.Payment) error
-	GetGroupByChatID(chatID int64) ([]bson.M, error)
+	GetGroupByChatID(chatID int64) ([]model.GroupedPayment, error)
 	GetByChatID(chatID int64) ([]model.Payment, error)
 }
 
@@ -34,7 +34,7 @@ func (dao paymentRepoImpl) Create(ctx context.Context, p *model.Payment) error {
 	return nil
 }
 
-func (dao paymentRepoImpl) GetGroupByChatID(chatID int64) ([]bson.M, error) {
+func (dao paymentRepoImpl) GetGroupByChatID(chatID int64) ([]model.GroupedPayment, error) {
 	collection := dao.client.Database("money").Collection("payments")
 	filter := bson.D{
 		{"$match", bson.D{{"chat_id", chatID}}}}
@@ -50,7 +50,7 @@ func (dao paymentRepoImpl) GetGroupByChatID(chatID int64) ([]bson.M, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error querying: %s", err)
 	}
-	var results []bson.M
+	var results []model.GroupedPayment
 	if err = cur.All(context.TODO(), &results); err != nil {
 		return nil, fmt.Errorf("error querying: %s", err)
 	}

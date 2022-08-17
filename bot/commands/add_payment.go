@@ -45,7 +45,7 @@ func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 			ID:       primitive.NewObjectID(),
 			ChatID:   bot.ChatID,
 			Username: username,
-			Value:    float32(value),
+			Value:    value,
 			Comment:  comment,
 		}
 

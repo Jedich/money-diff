@@ -3,7 +3,6 @@ package commands
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"money-diff/bot/helpers"
 	r "money-diff/repository"
@@ -20,13 +19,12 @@ func GetTotal(client *mongo.Client, bot *helpers.BotUpdateData, arguments string
 	if err != nil {
 		return err
 	}
-	msg := tgbotapi.NewMessage(bot.ChatID, "")
+	msg := tgbotapi.NewMessage(bot.ChatID, "Total:\n")
 	for _, payment := range payments {
-		msg.Text += fmt.Sprintf("%v: %.2f\n", payment["_id"], payment["value"])
+		msg.Text += fmt.Sprintf("%v: %.2f\n", payment.Username, payment.Total)
 	}
 	for _, payment := range directPayments {
-		direct := payment["_id"].(bson.M)
-		msg.Text += fmt.Sprintf("%v -> %v: %.2f\n", direct["from"], direct["to"], payment["value"])
+		msg.Text += fmt.Sprintf("%v -> %v: %.2f\n", payment.User.From, payment.User.To, payment.Total)
 	}
 	_, err = bot.Send(msg)
 	if err != nil {
