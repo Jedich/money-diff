@@ -14,16 +14,40 @@ import (
 )
 
 func AddDirectPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) error {
-	if bot.Update.Message.ReplyToMessage == nil {
-		return bot.SendMessage("Please reply to a target who you paid for.")
-	}
-	target := bot.Update.Message.ReplyToMessage.From
-	if target.UserName == bot.SenderName || target.IsBot {
-		return bot.SendMessage("Please choose a valid target.")
-	}
-
+	var valueString string
+	var fromUsername string
+	var toUsername string
+	participantRepo := r.NewParticipantRepo(client)
 	args := strings.Split(arguments, " ")
-	x, args := args[0], args[1:]
+	if bot.ChatID == int64(bot.Update.Message.From.ID) {
+		if len(args) < 3 {
+			return bot.SendMessage("Please input a correct command. (/adp [from] [to] [value] {comment})")
+		}
+		fromUsername, toUsername, valueString, args = args[0], args[1], args[2], args[3:]
+	} else {
+		if len(args) < 1 {
+			return bot.SendMessage("Please input a correct command. (/adp [value] {comment})")
+		}
+		if bot.Update.Message.ReplyToMessage == nil {
+			return bot.SendMessage("Please reply to a target who you paid for.")
+		}
+		target := bot.Update.Message.ReplyToMessage.From
+		if target.UserName == bot.SenderName || target.IsBot {
+			return bot.SendMessage("Please choose a valid target.")
+		}
+		valueString, args = args[0], args[1:]
+		fromUsername = bot.SenderName
+		toUsername = target.UserName
+
+		participant := &model.Participant{
+			UserID: target.ID,
+			ChatID: bot.ChatID,
+		}
+		err := participantRepo.Create(context.Background(), participant)
+		if err != nil {
+			return err
+		}
+	}
 
 	comment := strings.Join(args, " ")
 	n := utf8.RuneCountInString(comment)
@@ -31,7 +55,7 @@ func AddDirectPayment(client *mongo.Client, bot *helpers.BotUpdateData, argument
 		return bot.SendMessage("Please provide a shorter description. (%s > 50)", n)
 	}
 
-	value, err := strconv.ParseFloat(x, 32)
+	value, err := strconv.ParseFloat(valueString, 32)
 	if err != nil {
 		return bot.SendMessage("Please input a correct float value.")
 	}
@@ -40,8 +64,8 @@ func AddDirectPayment(client *mongo.Client, bot *helpers.BotUpdateData, argument
 		payment := &model.DirectPayment{
 			ID:           primitive.NewObjectID(),
 			ChatID:       bot.ChatID,
-			FromUsername: bot.SenderName,
-			ToUsername:   target.UserName,
+			FromUsername: fromUsername,
+			ToUsername:   toUsername,
 			Value:        float32(value),
 			Comment:      strings.Join(args, " "),
 		}
@@ -56,22 +80,11 @@ func AddDirectPayment(client *mongo.Client, bot *helpers.BotUpdateData, argument
 		return err
 	}
 
-	participantDao := r.NewParticipantRepo(client)
-
 	participant := &model.Participant{
 		UserID: bot.Update.Message.From.ID,
 		ChatID: bot.ChatID,
 	}
-	err = participantDao.Create(context.Background(), participant)
-	if err != nil {
-		return err
-	}
-
-	participant = &model.Participant{
-		UserID: target.ID,
-		ChatID: bot.ChatID,
-	}
-	err = participantDao.Create(context.Background(), participant)
+	err = participantRepo.Create(context.Background(), participant)
 	if err != nil {
 		return err
 	}

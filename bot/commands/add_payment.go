@@ -66,8 +66,8 @@ func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 		ChatID: bot.ChatID,
 	}
 
-	participantDao := r.NewParticipantRepo(client)
-	err = participantDao.Create(context.Background(), participant)
+	participantRepo := r.NewParticipantRepo(client)
+	err = participantRepo.Create(context.Background(), participant)
 	if err != nil {
 		return err
 	}
