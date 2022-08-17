@@ -1,7 +1,6 @@
 package bot
 
 import (
-	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
@@ -30,35 +29,34 @@ func StartBot(token string, client *mongo.Client) error {
 	}
 
 	for update := range updates {
-		if update.CallbackQuery != nil {
-			//_ := update.CallbackQuery.Data
-			//classesMap[update.CallbackQuery.From.ID] = class
-			_, err := bot.Send(tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID,
-				"Ok, I remember"))
-			fmt.Println(update.CallbackQuery.Data)
-			if err != nil {
-				return err
+		errs := make(chan error, 1)
+		go func(u tgbotapi.Update) {
+			defer close(errs)
+			if u.CallbackQuery != nil {
+				if err = callbackHandler(client, u, bot); err != nil { // Handle the command message
+					errs <- err
+				}
+				return
 			}
-		}
 
-		if update.Message == nil {
-			continue
-		}
-
-		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
-
-		if update.Message.IsCommand() {
-			if err = commandHandler(client, update, bot); err != nil { // Handle the command message
-				return err
+			if u.Message == nil {
+				return
 			}
-			continue
-		}
 
-		// Do something else with the message received
-		if err = messageHandler(client, update, bot); err != nil { // Handle the single message
-			return err
-		}
+			log.Printf("[%s] %s", u.Message.From.UserName, u.Message.Text)
 
+			if u.Message.IsCommand() {
+				if err = commandHandler(client, u, bot); err != nil { // Handle the command message
+					errs <- err
+				}
+				return
+			}
+
+			// Do something else with the message received
+			if err = messageHandler(client, u, bot); err != nil { // Handle the single message
+				errs <- err
+			}
+		}(update)
 	}
 
 	return nil

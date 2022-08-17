@@ -17,11 +17,12 @@ var regularMsgs = map[string]interface{}{
 	"hi":        msg.Greet,
 	"бот додай": command.AddPayment,
 	"bot add":   command.AddPayment,
-	"даун": func(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) error {
-		err := bot.SendMessage("Сам такий")
-		if err != nil {
-			return err
-		}
+	"клоун": func(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) error {
+		bot.SendMessage("Сам такий")
+		return nil
+	},
+	"умній": func(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) error {
+		bot.SendMessage("дякую))")
 		return nil
 	},
 }
