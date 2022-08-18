@@ -13,18 +13,19 @@ type PaymentRepository interface {
 	Create(ctx context.Context, p *model.Payment) error
 	GetGroupByChatID(chatID int64) ([]model.GroupedPayment, error)
 	GetByChatID(chatID int64) ([]model.Payment, error)
+	DeleteByChatID(ctx context.Context, chatID int64) error
 }
 
 type paymentRepoImpl struct {
-	client *mongo.Client
+	*genericRepo
 }
 
 func NewPaymentRepo(client *mongo.Client) PaymentRepository {
-	return paymentRepoImpl{client: client}
+	return paymentRepoImpl{&genericRepo{client: client, collectionName: "payments"}}
 }
 
-func (dao paymentRepoImpl) Create(ctx context.Context, p *model.Payment) error {
-	collection := dao.client.Database("money").Collection("payments")
+func (repo paymentRepoImpl) Create(ctx context.Context, p *model.Payment) error {
+	collection := repo.client.Database("money").Collection("payments")
 
 	_, err := collection.InsertOne(ctx, p)
 	if err != nil {
@@ -34,8 +35,8 @@ func (dao paymentRepoImpl) Create(ctx context.Context, p *model.Payment) error {
 	return nil
 }
 
-func (dao paymentRepoImpl) GetGroupByChatID(chatID int64) ([]model.GroupedPayment, error) {
-	collection := dao.client.Database("money").Collection("payments")
+func (repo paymentRepoImpl) GetGroupByChatID(chatID int64) ([]model.GroupedPayment, error) {
+	collection := repo.client.Database("money").Collection("payments")
 	filter := bson.D{
 		{"$match", bson.D{{"chat_id", chatID}}}}
 	groupStage := bson.D{
@@ -58,8 +59,8 @@ func (dao paymentRepoImpl) GetGroupByChatID(chatID int64) ([]model.GroupedPaymen
 	return results, nil
 }
 
-func (dao paymentRepoImpl) GetByChatID(chatID int64) ([]model.Payment, error) {
-	collection := dao.client.Database("money").Collection("payments")
+func (repo paymentRepoImpl) GetByChatID(chatID int64) ([]model.Payment, error) {
+	collection := repo.client.Database("money").Collection("payments")
 	filter := bson.D{{"chat_id", chatID}}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()

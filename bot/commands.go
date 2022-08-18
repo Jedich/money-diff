@@ -10,13 +10,17 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-var commandList = map[string]interface{}{
+type cmd func(*mongo.Client, *helpers.BotUpdateData, string) error
+
+var commandList = map[string]cmd{
 	"help":    command.Help,
+	"start":   command.Help,
 	"ap":      command.AddPayment,
 	"adp":     command.AddDirectPayment,
 	"total":   command.GetTotal,
 	"history": command.GetHistory,
 	"finish":  command.Finish,
+	"involve": command.Involve,
 }
 
 func cmdHandler(client *mongo.Client, update tgbotapi.Update, bot *tgbotapi.BotAPI) error {
@@ -33,7 +37,7 @@ func cmdHandler(client *mongo.Client, update tgbotapi.Update, bot *tgbotapi.BotA
 		// Make a default action ?
 		return nil
 	}
-	err := commandList[commandReq].(func(*mongo.Client, *helpers.BotUpdateData, string) error)(client, botData, commandArgs)
+	err := commandList[commandReq](client, botData, commandArgs)
 
 	if err != nil {
 		log.Println(err)

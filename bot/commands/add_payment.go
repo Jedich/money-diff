@@ -19,12 +19,14 @@ func AddPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments stri
 	args := strings.Split(arguments, " ")
 	if bot.ChatID == int64(bot.Update.Message.From.ID) {
 		if len(args) < 2 {
-			return bot.SendMessage("Please input a correct command.")
+			return bot.SendMessageMarkdown("Please input a correct command.\n" +
+				"`/ap[name][value]{comment}`")
 		}
 		username, valueString, args = args[0], args[1], args[2:]
 	} else {
-		if len(args) < 1 {
-			return bot.SendMessage("Please input a correct command.")
+		if args[0] == "" {
+			return bot.SendMessageMarkdown("Please input a correct command.\n" +
+				"`/ap[value]{comment}`")
 		}
 		valueString, args = args[0], args[1:]
 		username = bot.SenderName

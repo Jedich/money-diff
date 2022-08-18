@@ -13,18 +13,19 @@ import (
 type ParticipantRepository interface {
 	Create(ctx context.Context, p *model.Participant) error
 	GetByChatID(chatID int64) ([]model.Participant, error)
+	DeleteByChatID(ctx context.Context, chatID int64) error
 }
 
 type participantRepoImpl struct {
-	client *mongo.Client
+	*genericRepo
 }
 
 func NewParticipantRepo(client *mongo.Client) ParticipantRepository {
-	return participantRepoImpl{client: client}
+	return participantRepoImpl{&genericRepo{client: client, collectionName: "participants"}}
 }
 
-func (dao participantRepoImpl) Create(ctx context.Context, p *model.Participant) error {
-	collection := dao.client.Database("money").Collection("participants")
+func (repo participantRepoImpl) Create(ctx context.Context, p *model.Participant) error {
+	collection := repo.client.Database("money").Collection("participants")
 
 	_, err := collection.InsertOne(ctx, p)
 	if err != nil {
@@ -42,8 +43,8 @@ func (dao participantRepoImpl) Create(ctx context.Context, p *model.Participant)
 	return nil
 }
 
-func (dao participantRepoImpl) GetByChatID(chatID int64) ([]model.Participant, error) {
-	collection := dao.client.Database("money").Collection("participants")
+func (repo participantRepoImpl) GetByChatID(chatID int64) ([]model.Participant, error) {
+	collection := repo.client.Database("money").Collection("participants")
 	filter := bson.D{{"chat_id", chatID}}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()

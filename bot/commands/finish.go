@@ -6,14 +6,28 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	callback "money-diff/bot/callbacks"
 	"money-diff/bot/helpers"
+	"money-diff/db"
 	"money-diff/repository"
 	"time"
 )
 
 func Finish(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) error {
 	if _, ok := callback.GetCallback(bot.ChatID); !ok {
-		msg := tgbotapi.NewMessage(bot.ChatID, "All participants must confirm!")
+		res, err := repository.NewParticipantRepo(client).GetByChatID(bot.ChatID)
+		if err != nil {
+			return err
+		}
+		if len(res) == 0 {
+			err := bot.SendMessage("Nothing to confirm yet.")
+			if err != nil {
+				return err
+			}
+			return nil
+		}
 
+		msg := tgbotapi.NewMessage(bot.ChatID, "")
+		msg.Text = fmt.Sprintf("All participants must confirm! You have %d participant(s) and *5 minutes* to do this.", len(res))
+		msg.ParseMode = tgbotapi.ModeMarkdown
 		keyboard := tgbotapi.InlineKeyboardMarkup{}
 		for _, btnText := range []string{"Confirm", "Cancel"} {
 			var row []tgbotapi.InlineKeyboardButton
@@ -38,11 +52,32 @@ func Finish(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) 
 				return err
 			}
 			res, err := Calculate(client, bot)
-			resString := "Result:\n"
+			resString := ""
 			for _, r := range res {
 				resString += fmt.Sprintf("%v\n", r)
 			}
-			err = bot.SendMessage(resString)
+			if resString == "" {
+				resString = "All clear!"
+			}
+			err = bot.SendMessage("Result:\n" + resString)
+			if err != nil {
+				return err
+			}
+			err = db.WithTransaction(client, func(ctx mongo.SessionContext, client *mongo.Client) error {
+				err := repository.NewPaymentRepo(client).DeleteByChatID(ctx, bot.ChatID)
+				if err != nil {
+					return err
+				}
+				err = repository.NewDirectPaymentRepo(client).DeleteByChatID(ctx, bot.ChatID)
+				if err != nil {
+					return err
+				}
+				err = repository.NewParticipantRepo(client).DeleteByChatID(ctx, bot.ChatID)
+				if err != nil {
+					return err
+				}
+				return nil
+			})
 			if err != nil {
 				return err
 			}
@@ -61,7 +96,7 @@ func Finish(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) 
 
 		cb := callback.NewCallback(bot.ChatID, cbSuccess, cbFailure)
 
-		err = cb.Start(5 * time.Second)
+		err = cb.Start(5 * time.Minute)
 		repo.Finish(bot.ChatID)
 		if err != nil {
 			return err
@@ -75,17 +110,17 @@ func Finish(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) 
 	return nil
 }
 
-type Debt struct {
-	from  string
-	to    string
-	Value float64
+type debt struct {
+	who   string
+	whom  string
+	value float64
 }
 
-func (d Debt) String() string {
-	return fmt.Sprintf("%s -> %s: %.2f", d.from, d.to, d.Value)
+func (d debt) String() string {
+	return fmt.Sprintf("%s -> %s: %.2f", d.who, d.whom, d.value)
 }
 
-func Calculate(client *mongo.Client, bot *helpers.BotUpdateData) (map[string]Debt, error) {
+func Calculate(client *mongo.Client, bot *helpers.BotUpdateData) (map[string]debt, error) {
 	paymentRepo := repository.NewPaymentRepo(client)
 	directPaymentRepo := repository.NewDirectPaymentRepo(client)
 	payments, err := paymentRepo.GetGroupByChatID(bot.ChatID)
@@ -109,16 +144,16 @@ func Calculate(client *mongo.Client, bot *helpers.BotUpdateData) (map[string]Deb
 		}
 		negativeValues[payment.Username] = res
 	}
-	results := make(map[string]Debt, len(payments))
+	results := make(map[string]debt, len(payments))
 	for key1, val1 := range positiveValues {
 		v1 := val1
 		for key2, val2 := range negativeValues {
 			if v1 > 0 {
 				if v1+val2 < 0 {
-					results[key1+key2] = Debt{key1, key2, -v1}
+					results[key2+key1] = debt{key2, key1, -v1}
 					negativeValues[key2] = val2 + v1
 				} else {
-					results[key1+key2] = Debt{key1, key2, v1}
+					results[key2+key1] = debt{key2, key1, v1}
 					negativeValues[key2] = 0
 				}
 			} else {
@@ -131,25 +166,37 @@ func Calculate(client *mongo.Client, bot *helpers.BotUpdateData) (map[string]Deb
 	if err != nil {
 		return nil, err
 	}
-	for _, payment := range directPayments {
-		name := payment.User.From + payment.User.To
-		invName := payment.User.To + payment.User.From
-		if t, ok := results[invName]; ok {
-			if payment.Total == t.Value {
+	for _, currentDebt := range directPayments {
+		name := currentDebt.User.WhoOwes + currentDebt.User.Whom
+		invName := currentDebt.User.Whom + currentDebt.User.WhoOwes
+		fmt.Println(name)
+		fmt.Println(invName)
+
+		if existingDebtInv, ok := results[invName]; ok {
+			fmt.Println(currentDebt.Total)
+			fmt.Println(existingDebtInv.value)
+			if currentDebt.Total == existingDebtInv.value {
 				delete(results, invName)
-			} else if payment.Total > t.Value {
-				payment.Total -= t.Value
+			} else if currentDebt.Total > existingDebtInv.value {
+				currentDebt.Total -= existingDebtInv.value
 				delete(results, invName)
+				if t, ok := results[name]; ok {
+					t.value += currentDebt.Total
+					results[name] = t
+				} else {
+					results[name] = debt{currentDebt.User.WhoOwes, currentDebt.User.Whom, currentDebt.Total}
+				}
+				continue
 			} else {
-				t.Value -= payment.Total
-				results[invName] = t
+				existingDebtInv.value -= currentDebt.Total
+				results[invName] = existingDebtInv
 			}
 		}
 		if t, ok := results[name]; ok {
-			t.Value += payment.Total
+			t.value += currentDebt.Total
 			results[name] = t
 		} else {
-			results[name] = Debt{payment.User.From, payment.User.To, payment.Total}
+			results[name] = debt{currentDebt.User.Whom, currentDebt.User.WhoOwes, currentDebt.Total}
 		}
 	}
 	return results, nil

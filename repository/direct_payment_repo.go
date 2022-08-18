@@ -13,18 +13,19 @@ type DirectPaymentRepository interface {
 	Create(ctx context.Context, p *model.DirectPayment) error
 	GetGroupByChatID(chatID int64) ([]model.GroupedDirectPayment, error)
 	GetByChatID(chatID int64) ([]model.DirectPayment, error)
+	DeleteByChatID(ctx context.Context, chatID int64) error
 }
 
 type directPaymentRepoImpl struct {
-	client *mongo.Client
+	*genericRepo
 }
 
 func NewDirectPaymentRepo(client *mongo.Client) DirectPaymentRepository {
-	return directPaymentRepoImpl{client: client}
+	return directPaymentRepoImpl{&genericRepo{client: client, collectionName: "direct_payments"}}
 }
 
-func (dao directPaymentRepoImpl) Create(ctx context.Context, p *model.DirectPayment) error {
-	collection := dao.client.Database("money").Collection("direct_payments")
+func (repo directPaymentRepoImpl) Create(ctx context.Context, p *model.DirectPayment) error {
+	collection := repo.client.Database("money").Collection("direct_payments")
 
 	_, err := collection.InsertOne(ctx, p)
 	if err != nil {
@@ -34,8 +35,8 @@ func (dao directPaymentRepoImpl) Create(ctx context.Context, p *model.DirectPaym
 	return nil
 }
 
-func (dao directPaymentRepoImpl) GetGroupByChatID(chatID int64) ([]model.GroupedDirectPayment, error) {
-	collection := dao.client.Database("money").Collection("direct_payments")
+func (repo directPaymentRepoImpl) GetGroupByChatID(chatID int64) ([]model.GroupedDirectPayment, error) {
+	collection := repo.client.Database("money").Collection("direct_payments")
 	filter := bson.D{
 		{"$match", bson.D{{"chat_id", chatID}}}}
 	groupStage := bson.D{
@@ -61,8 +62,8 @@ func (dao directPaymentRepoImpl) GetGroupByChatID(chatID int64) ([]model.Grouped
 	return results, nil
 }
 
-func (dao directPaymentRepoImpl) GetByChatID(chatID int64) ([]model.DirectPayment, error) {
-	collection := dao.client.Database("money").Collection("direct_payments")
+func (repo directPaymentRepoImpl) GetByChatID(chatID int64) ([]model.DirectPayment, error) {
+	collection := repo.client.Database("money").Collection("direct_payments")
 	filter := bson.D{{"chat_id", chatID}}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()

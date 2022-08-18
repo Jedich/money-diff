@@ -15,18 +15,20 @@ import (
 
 func AddDirectPayment(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) error {
 	var valueString string
-	var fromUsername string
-	var toUsername string
+	var whoOwes string
+	var whom string
 	participantRepo := r.NewParticipantRepo(client)
 	args := strings.Split(arguments, " ")
 	if bot.ChatID == int64(bot.Update.Message.From.ID) {
 		if len(args) < 3 {
-			return bot.SendMessage("Please input a correct command. (/adp [from] [to] [value] {comment})")
+			return bot.SendMessageMarkdown("Please input a correct command.\n" +
+				"`/adp[who][to][value]{comment}`")
 		}
-		fromUsername, toUsername, valueString, args = args[0], args[1], args[2], args[3:]
+		whom, whoOwes, valueString, args = args[0], args[1], args[2], args[3:]
 	} else {
 		if len(args) < 1 {
-			return bot.SendMessage("Please input a correct command. (/adp [value] {comment})")
+			return bot.SendMessageMarkdown("Please input a correct command.\n" +
+				"`/adp[value]{comment}`")
 		}
 		if bot.Update.Message.ReplyToMessage == nil {
 			return bot.SendMessage("Please reply to a target who you paid for.")
@@ -36,8 +38,8 @@ func AddDirectPayment(client *mongo.Client, bot *helpers.BotUpdateData, argument
 			return bot.SendMessage("Please choose a valid target.")
 		}
 		valueString, args = args[0], args[1:]
-		fromUsername = bot.SenderName
-		toUsername = target.UserName
+		whoOwes = target.UserName
+		whom = bot.SenderName
 
 		participant := &model.Participant{
 			UserID: target.ID,
@@ -62,12 +64,12 @@ func AddDirectPayment(client *mongo.Client, bot *helpers.BotUpdateData, argument
 
 	err = db.WithTransaction(client, func(ctx mongo.SessionContext, client *mongo.Client) error {
 		payment := &model.DirectPayment{
-			ID:           primitive.NewObjectID(),
-			ChatID:       bot.ChatID,
-			FromUsername: fromUsername,
-			ToUsername:   toUsername,
-			Value:        value,
-			Comment:      strings.Join(args, " "),
+			ID:      primitive.NewObjectID(),
+			ChatID:  bot.ChatID,
+			WhoOwes: whoOwes,
+			Whom:    whom,
+			Value:   value,
+			Comment: strings.Join(args, " "),
 		}
 		paymentRepo := r.NewDirectPaymentRepo(client)
 		err = paymentRepo.Create(ctx, payment)

@@ -14,6 +14,28 @@ type BotUpdateData struct {
 
 func (bot *BotUpdateData) SendMessage(text string, a ...any) error {
 	msg := tgbotapi.NewMessage(bot.ChatID, "")
+	var err error
+	if len(a) != 0 {
+		err = bot.sendMessage(msg, text, a)
+	} else {
+		err = bot.sendMessage(msg, text)
+	}
+	return err
+}
+
+func (bot *BotUpdateData) SendMessageMarkdown(text string, a ...any) error {
+	msg := tgbotapi.NewMessage(bot.ChatID, "")
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	var err error
+	if len(a) != 0 {
+		err = bot.sendMessage(msg, text, a)
+	} else {
+		err = bot.sendMessage(msg, text)
+	}
+	return err
+}
+
+func (bot *BotUpdateData) sendMessage(msg tgbotapi.MessageConfig, text string, a ...any) error {
 	msg.Text = ""
 	if len(a) != 0 {
 		msg.Text = fmt.Sprintf(text, a)

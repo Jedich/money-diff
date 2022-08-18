@@ -20,12 +20,17 @@ func GetTotal(client *mongo.Client, bot *helpers.BotUpdateData, arguments string
 		return err
 	}
 	msg := tgbotapi.NewMessage(bot.ChatID, "Total:\n")
+	resString := ""
 	for _, payment := range payments {
-		msg.Text += fmt.Sprintf("%v: %.2f\n", payment.Username, payment.Total)
+		resString += fmt.Sprintf("%v: %.2f\n", payment.Username, payment.Total)
 	}
 	for _, payment := range directPayments {
-		msg.Text += fmt.Sprintf("%v -> %v: %.2f\n", payment.User.From, payment.User.To, payment.Total)
+		resString += fmt.Sprintf("%v\n", payment)
 	}
+	if resString == "" {
+		resString = "It's empty.."
+	}
+	msg.Text += resString
 	_, err = bot.Send(msg)
 	if err != nil {
 		return fmt.Errorf("error sending: %s", err)
