@@ -7,6 +7,7 @@ import (
 	callback "money-diff/bot/callbacks"
 	"money-diff/bot/helpers"
 	"money-diff/db"
+	"money-diff/model"
 	"money-diff/repository"
 	"time"
 )
@@ -51,7 +52,17 @@ func Finish(client *mongo.Client, bot *helpers.BotUpdateData, arguments string) 
 			if err != nil {
 				return err
 			}
-			res, err := Calculate(client, bot)
+			paymentRepo := repository.NewPaymentRepo(client)
+			directPaymentRepo := repository.NewDirectPaymentRepo(client)
+			payments, err := paymentRepo.GetGroupByChatID(bot.ChatID)
+			if err != nil {
+				return nil
+			}
+			directPayments, err := directPaymentRepo.GetGroupByChatID(bot.ChatID)
+			if err != nil {
+				return nil
+			}
+			res, err := Calculate(payments, directPayments)
 			resString := ""
 			for _, r := range res {
 				resString += fmt.Sprintf("%v\n", r)
@@ -120,14 +131,7 @@ func (d debt) String() string {
 	return fmt.Sprintf("%s -> %s: %.2f", d.who, d.whom, d.value)
 }
 
-func Calculate(client *mongo.Client, bot *helpers.BotUpdateData) (map[string]debt, error) {
-	paymentRepo := repository.NewPaymentRepo(client)
-	directPaymentRepo := repository.NewDirectPaymentRepo(client)
-	payments, err := paymentRepo.GetGroupByChatID(bot.ChatID)
-	if err != nil {
-		return nil, err
-	}
-
+func Calculate(payments []model.GroupedPayment, directPayments []model.GroupedDirectPayment) (map[string]debt, error) {
 	var totalSum float64
 	for _, payment := range payments {
 		totalSum += payment.Total
@@ -150,10 +154,10 @@ func Calculate(client *mongo.Client, bot *helpers.BotUpdateData) (map[string]deb
 		for key2, val2 := range negativeValues {
 			if v1 > 0 {
 				if v1+val2 < 0 {
-					results[key2+key1] = debt{key2, key1, -v1}
+					results[key2+key1] = debt{key2, key1, v1}
 					negativeValues[key2] = val2 + v1
 				} else {
-					results[key2+key1] = debt{key2, key1, v1}
+					results[key2+key1] = debt{key2, key1, -val2}
 					negativeValues[key2] = 0
 				}
 			} else {
@@ -162,41 +166,26 @@ func Calculate(client *mongo.Client, bot *helpers.BotUpdateData) (map[string]deb
 		}
 	}
 
-	directPayments, err := directPaymentRepo.GetGroupByChatID(bot.ChatID)
-	if err != nil {
-		return nil, err
-	}
 	for _, currentDebt := range directPayments {
 		name := currentDebt.User.WhoOwes + currentDebt.User.Whom
 		invName := currentDebt.User.Whom + currentDebt.User.WhoOwes
-		fmt.Println(name)
-		fmt.Println(invName)
-
 		if existingDebtInv, ok := results[invName]; ok {
-			fmt.Println(currentDebt.Total)
-			fmt.Println(existingDebtInv.value)
 			if currentDebt.Total == existingDebtInv.value {
 				delete(results, invName)
 			} else if currentDebt.Total > existingDebtInv.value {
 				currentDebt.Total -= existingDebtInv.value
 				delete(results, invName)
-				if t, ok := results[name]; ok {
-					t.value += currentDebt.Total
-					results[name] = t
-				} else {
-					results[name] = debt{currentDebt.User.WhoOwes, currentDebt.User.Whom, currentDebt.Total}
-				}
-				continue
 			} else {
 				existingDebtInv.value -= currentDebt.Total
 				results[invName] = existingDebtInv
+				continue
 			}
 		}
 		if t, ok := results[name]; ok {
 			t.value += currentDebt.Total
 			results[name] = t
 		} else {
-			results[name] = debt{currentDebt.User.Whom, currentDebt.User.WhoOwes, currentDebt.Total}
+			results[name] = debt{currentDebt.User.WhoOwes, currentDebt.User.Whom, currentDebt.Total}
 		}
 	}
 	return results, nil
