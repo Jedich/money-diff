@@ -1,47 +1,50 @@
 version: '3.8'
 
 services:
+  moneydiff:
+    container_name: moneydiff
+    build: .
+    networks:
+      - app-network
+    depends_on:
+      - mongo1
   mongo1:
     container_name: mongo1
     image: mongo:5.0
-    volumes:
-      - ~/mongors/data1:/data/db
-      - ./rs-init.sh:/scripts/rs-init.sh
     networks:
-      - mongors-network
+      - mongo-network
+      - app-network
     ports:
-      - 27021:27017
+      - 27017:27017
+    depends_on:
+      - mongo2
+      - mongo3
     links:
       - mongo2
       - mongo3
     restart: always
-    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "dbrs" ]
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=mongo
-      - MONGO_INITDB_ROOT_PASSWORD=111
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs" ]
   mongo2:
-    container_name: mongo2
-    image: mongo:5.0
-    volumes:
-      - ~/mongors/data2:/data/db
-    networks:
-      - mongors-network
-    ports:
-      - 27022:27017
-    restart: always
-    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "dbrs" ]
+      container_name: mongo2
+      image: mongo:5.0
+      networks:
+        - mongo-network
+      ports:
+        - 27018:27017
+      restart: always
+      entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs" ]
   mongo3:
-    container_name: mongo3
-    image: mongo:5.0
-    volumes:
-      - ~/mongors/data3:/data/db
-    networks:
-      - mongors-network
-    ports:
-      - 27023:27017
-    restart: always
-    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "dbrs" ]
+      container_name: mongo3
+      image: mongo:5.0
+      networks:
+        - mongo-network
+      ports:
+        - 27019:27017
+      restart: always
+      entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs" ]
 
 networks:
-  mongors-network:
+  app-network:
+    driver: bridge
+  mongo-network:
     driver: bridge
